@@ -12,7 +12,7 @@ namespace Quintessence.Models
 
         public string Distance { get; set; }
 
-        public int planetId { get; set; }
+        public int PlanetId { get; set; }
 
         public string ImageUrl { get; set; }
 
@@ -25,5 +25,7 @@ namespace Quintessence.Models
         public string Atmosphere { get; set; }
 
         public string Size { get; set; }
+
+        public Planet Planet { get; set; }
     }
 }

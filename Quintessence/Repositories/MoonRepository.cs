@@ -7,40 +7,51 @@ using Quintessence.Utils;
 
 namespace Quintessence.Repositories
 {
-    public class PlanetRepository : BaseRepository, IPlanetRepository
+    public class MoonRepository : BaseRepository, IMoonRepository
     {
-        public PlanetRepository(IConfiguration configuration) : base(configuration) { }
+        public MoonRepository(IConfiguration configuration) : base(configuration) { }
 
-        public List<Planet> GetAllPlanets()
+        public List<Moon> GetAllMoons()
         {
-            var planets = new List<Planet>();
+            var moons = new List<Moon>();
             using (var conn = Connection)
             {
                 conn.Open();
                 using (var cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT Id, Name, ImageUrl, Distance, Gravity, Composition, Orbit, Atmosphere, Size
-                                    From Planet ORDER BY name;";
+                    cmd.CommandText = @"SELECT Moon.Id, Moon.Name, Moon.PlanetId, Moon.ImageUrl, Moon.Distance, Moon.Gravity, Moon.Composition, Moon.Orbit, Moon.Atmosphere, Moon.Size,
+                                        p.name AS Planetname
+
+                                    From Moon
+                                    JOIN Planet p ON Moon.PlanetId = p.Id
+                                ORDER BY Moon.Name;";
 
                     var reader = cmd.ExecuteReader();
                     while (reader.Read())
                     {
-                        planets.Add(new Planet
+                        moons.Add(new Moon
                         {
                             Id = DbUtils.GetInt(reader, "id"),
                             Name = DbUtils.GetString(reader, "name"),
                             ImageUrl = DbUtils.GetString(reader, "imageUrl"),
+                            PlanetId = DbUtils.GetInt(reader, "planetid"),
                             Distance = DbUtils.GetString(reader, "distance"),
                             Gravity = DbUtils.GetString(reader, "gravity"),
                             Composition = DbUtils.GetString(reader, "composition"),
                             Orbit = DbUtils.GetString(reader, "orbit"),
                             Atmosphere = DbUtils.GetString(reader, "atmosphere"),
                             Size = DbUtils.GetString(reader, "size"),
+                            Planet = new Planet()
+                            {
+                                
+                                Name = DbUtils.GetString(reader, "Planetname"),
+                               
+                            }
 
                         });
                     }
                     reader.Close();
-                    return planets;
+                    return moons;
                 }
             }
         }
@@ -54,7 +65,7 @@ namespace Quintessence.Repositories
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                    SELECT Name FROM Planet WHERE Name= @name";
+                    SELECT Name FROM Moon WHERE Name= @name";
 
                     cmd.Parameters.AddWithValue("name", name);
 
@@ -65,7 +76,7 @@ namespace Quintessence.Repositories
             }
         }
 
-        public void AddPlanet(Planet planet)
+        public void AddMoon(Moon moon)
         {
             using (SqlConnection conn = Connection)
             {
@@ -74,49 +85,52 @@ namespace Quintessence.Repositories
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                    INSERT INTO Planet (Name, ImageUrl, Distance, Gravity, Composition, Orbit, Atmosphere, Size )
+                    INSERT INTO Moon (Name, ImageUrl, PlanetId, Distance, Gravity, Composition, Orbit, Atmosphere, Size )
                     OUTPUT INSERTED.Id
-                    Values(@name, @imageUrl, @distance, @gravity, @composition, @orbit, @atmosphere, @size)";
+                    Values(@name, @imageUrl, @planetId, @distance, @gravity, @composition, @orbit, @atmosphere, @size)";
 
-                    cmd.Parameters.AddWithValue("name", planet.Name);
-                    cmd.Parameters.AddWithValue("imageUrl", planet.ImageUrl);
-                    cmd.Parameters.AddWithValue("distance", planet.Distance);
-                    cmd.Parameters.AddWithValue("gravity", planet.Gravity);
-                    cmd.Parameters.AddWithValue("composition", planet.Composition);
-                    cmd.Parameters.AddWithValue("orbit", planet.Orbit);
-                    cmd.Parameters.AddWithValue("atmosphere", planet.Atmosphere);
-                    cmd.Parameters.AddWithValue("size", planet.Size);
+                    cmd.Parameters.AddWithValue("name", moon.Name);
+                    cmd.Parameters.AddWithValue("imageUrl", moon.ImageUrl);
+                    cmd.Parameters.AddWithValue("planetId", moon.PlanetId);
+                    cmd.Parameters.AddWithValue("distance", moon.Distance);
+                    cmd.Parameters.AddWithValue("gravity", moon.Gravity);
+                    cmd.Parameters.AddWithValue("composition", moon.Composition);
+                    cmd.Parameters.AddWithValue("orbit", moon.Orbit);
+                    cmd.Parameters.AddWithValue("atmosphere", moon.Atmosphere);
+                    cmd.Parameters.AddWithValue("size", moon.Size);
 
-                    planet.Id = (int)cmd.ExecuteScalar();
+                    moon.Id = (int)cmd.ExecuteScalar();
 
                 }
             }
         }
 
-        public Planet GetPlanetById(int id)
+        public Moon GetMoonById(int id)
         {
             using (var conn = Connection)
             {
                 conn.Open();
                 using (var cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"SELECT p.id, p.name, p.imageUrl, p.distance, p.gravity, p.composition, p.orbit, p.atmosphere, p.size
-                                        FROM Planet p
-                                        WHERE id = @id";
-                                        
+                    cmd.CommandText = @"SELECT m.id, m.name, m.imageUrl, m.planetId, m.distance, m.gravity, m.composition, m.orbit, m.atmosphere, m.size
+                                        FROM Moon m
+                                         WHERE id = @id";
+
+
                     cmd.Parameters.AddWithValue("@id", id);
 
                     var reader = cmd.ExecuteReader();
 
-                    Planet planet = null;
+                    Moon moon = null;
 
                     if (reader.Read())
                     {
-                        planet = (new Planet()
+                        moon = (new Moon()
                         {
                             Id = DbUtils.GetInt(reader, "id"),
                             Name = DbUtils.GetString(reader, "name"),
                             ImageUrl = DbUtils.GetString(reader, "imageUrl"),
+                            PlanetId = DbUtils.GetInt(reader, "planetId"),
                             Distance = DbUtils.GetString(reader, "distance"),
                             Gravity = DbUtils.GetString(reader, "gravity"),
                             Composition = DbUtils.GetString(reader, "composition"),
@@ -126,12 +140,12 @@ namespace Quintessence.Repositories
                         });
                     }
                     reader.Close();
-                    return planet;
+                    return moon;
                 }
             }
         }
 
-        public void DeletePlanet(int id)
+        public void DeleteMoon(int id)
         {
             using (SqlConnection conn = Connection)
             {
@@ -140,7 +154,7 @@ namespace Quintessence.Repositories
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                    DELETE FROM Planet
+                    DELETE FROM Moon
                     WHERE Id = @id";
 
                     cmd.Parameters.AddWithValue("@id", id);
@@ -151,17 +165,18 @@ namespace Quintessence.Repositories
             }
         }
 
-        public void EditPlanet(Planet planet)
+        public void EditMoon(Moon moon)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"UPDATE Planet 
+                    cmd.CommandText = @"UPDATE Moon 
                                         SET 
                                         [Name] = @name,
                                         [ImageUrl] = @imageUrl,
+                                        [PlanetId] = @planetId,
                                         [Distance] = @distance,
                                         [Gravity] = @gravity,
                                         [Composition] = @composition,
@@ -169,15 +184,16 @@ namespace Quintessence.Repositories
                                         [Atmosphere] = @atmosphere,
                                         [Size] = @size
                                         WHERE Id = @id";
-                    cmd.Parameters.AddWithValue("@id", planet.Id);
-                    cmd.Parameters.AddWithValue("@name", planet.Name);
-                    cmd.Parameters.AddWithValue("@imageUrl", planet.ImageUrl);
-                    cmd.Parameters.AddWithValue("@distance", planet.Distance);
-                    cmd.Parameters.AddWithValue("@gravity", planet.Gravity);
-                    cmd.Parameters.AddWithValue("@composition", planet.Composition);
-                    cmd.Parameters.AddWithValue("@orbit", planet.Orbit);
-                    cmd.Parameters.AddWithValue("@atmosphere", planet.Atmosphere);
-                    cmd.Parameters.AddWithValue("@size", planet.Size);
+                    cmd.Parameters.AddWithValue("@id", moon.Id);
+                    cmd.Parameters.AddWithValue("@name", moon.Name);
+                    cmd.Parameters.AddWithValue("@imageUrl", moon.ImageUrl);
+                    cmd.Parameters.AddWithValue("@planetId", moon.PlanetId);
+                    cmd.Parameters.AddWithValue("@distance", moon.Distance);
+                    cmd.Parameters.AddWithValue("@gravity", moon.Gravity);
+                    cmd.Parameters.AddWithValue("@composition", moon.Composition);
+                    cmd.Parameters.AddWithValue("@orbit", moon.Orbit);
+                    cmd.Parameters.AddWithValue("@atmosphere", moon.Atmosphere);
+                    cmd.Parameters.AddWithValue("@size", moon.Size);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -188,9 +204,10 @@ namespace Quintessence.Repositories
 
     }
 };
-      
-            
-            
-               
-            
+
+
+
+
+
+
 
